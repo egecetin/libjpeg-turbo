@@ -8,12 +8,13 @@ subsampling, which allows losslessly transposed or rotated 4:1:1 JPEG images to
 be losslessly cropped, partially decompressed, or decompressed to planar YUV
 images.
 
-2. Fixed various segfaults and buffer overruns that occurred when attempting to
-decompress various specially-crafted malformed 12-bit-per-component lossless
-JPEG images.  These issues were caused by out-of-range sample values that were
-not range-limited before being used as array indices.  The issues were specific
-to 12-bit data precision, since that is the only data precision for which the
-range of the sample data type exceeds the valid sample range.
+2. Fixed various segfaults and buffer overruns (CVE-2023-2804) that occurred
+when attempting to decompress various specially-crafted malformed
+12-bit-per-component lossless JPEG images.  These issues were caused by
+out-of-range sample values that were not range-limited before being used as
+array indices.  The issues were specific to 12-bit data precision, since that
+is the only data precision for which the range of the sample data type exceeds
+the valid sample range.
 
 3. Fixed an oversight in 1.4 beta1[8] that caused various segfaults and buffer
 overruns when attempting to decompress various specially-crafted malformed
@@ -27,6 +28,22 @@ incompletely, which caused the color converter to read from uninitialized
 memory.  With 12-bit data precision, this caused a buffer overrun or underrun
 and subsequent segfault if the sample value read from unitialized memory was
 outside of the valid sample range.
+
+5. Fixed a long-standing issue whereby the `tj3Transform()` function, when used
+with the `TJXOP_TRANSPOSE`, `TJXOP_TRANSVERSE`, `TJXOP_ROT90`, or
+`TJXOP_ROT270` transform operation and without automatic JPEG destination
+buffer (re)allocation or lossless cropping, computed the worst-case transformed
+JPEG image size based on the source image dimensions rather than the
+transformed image dimensions.  If a calling program allocated the JPEG
+destination buffer based on the transformed image dimensions, as the API
+documentation instructs, and attempted to transform a specially-crafted 4:2:2,
+4:4:0, 4:1:1, or 4:4:1 JPEG source image containing a large amount of metadata,
+the issue caused `tj3Transform()` to overflow the JPEG destination buffer
+rather than fail gracefully.  The issue could be worked around by setting
+`TJXOPT_COPYNONE`.  Note that, irrespective of this issue, `tj3Transform()`
+cannot reliably transform JPEG source images that contain a large amount of
+metadata unless automatic JPEG destination buffer (re)allocation is used or
+`TJXOPT_COPYNONE` is set.
 
 
 2.1.91 (3.0 beta2)
